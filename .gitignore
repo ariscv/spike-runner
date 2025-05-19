@@ -1,0 +1,11 @@
+repo/
+build/
+bao-demos/
+.vscode/*
+.vscode/settings.json
+.metals/*
+mini-gdbstub/
+!.vscode/lauch.json
+!.vscode/tasks.json
+*.log
+*.trace
