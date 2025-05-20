@@ -189,13 +189,13 @@ static bool emu_del_bp(void *args, size_t addr, bp_type_t type)
     sim_t *s = (sim_t *) args;
 
     // It's fine when there's no matching breakpoint, just doing nothing
-    printf("Deleting breakpoint at 0x%x\n", addr);
+    // printf("Deleting breakpoint at 0x%x\n", addr);
     if (type != BP_SOFTWARE )
         return true;
     // if( !bp.is_full() || !bp.judge_eq(addr))
     //   return true;
     bp.del_bp(addr);
-	bp.print();
+	// bp.print();
     // printf("Deleted breakpoint at 0x%x\n", addr);
     return true;
 }
@@ -248,4 +248,5 @@ int mygdbstub(sim_t* s){
     // s->diff_get_regs(NULL);
   // }
   gdbstub_close(&gdbstub);
+  return 0;
 }

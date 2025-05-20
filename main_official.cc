@@ -116,7 +116,7 @@ static long load_img(char* img_file) {
   }
 
   FILE *fp = fopen(img_file, "rb");
-  // Assert(fp, "Can not open '%s'", img_file);
+  Assert(fp, "Can not open file '%s'", img_file);
 
   fseek(fp, 0, SEEK_END);
   long size = ftell(fp);
@@ -146,6 +146,15 @@ void sim_t::diff_init(int port) {
 
   return ;
 }
+  static std::vector<std::pair<reg_t, abstract_mem_t*>> make_mems(const std::vector<mem_cfg_t> &layout)
+{
+  std::vector<std::pair<reg_t, abstract_mem_t*>> mems;
+  mems.reserve(layout.size());
+  for (const auto &cfg : layout) {
+    mems.push_back(std::make_pair(cfg.get_base(), new mem_t(cfg.get_size())));
+  }
+  return mems;
+}
 static const struct option longopts[] = {
   {"help", no_argument, NULL, 'h'},
   {"version", no_argument, NULL, 'V'},
@@ -157,14 +166,45 @@ static const struct option longopts[] = {
   // ----------
   {NULL, 0, NULL, 0}};
 
-  static std::vector<std::pair<reg_t, abstract_mem_t*>> make_mems(const std::vector<mem_cfg_t> &layout)
+void getopt_img_oneline(char* oneline,char* img_path,long* load_addr)
 {
-  std::vector<std::pair<reg_t, abstract_mem_t*>> mems;
-  mems.reserve(layout.size());
-  for (const auto &cfg : layout) {
-    mems.push_back(std::make_pair(cfg.get_base(), new mem_t(cfg.get_size())));
-  }
-  return mems;
+  /* 用@分割，比如'/path/to/img@0x1000' */
+    std::string input = oneline;
+    std::vector<std::string> result;
+    std::istringstream iss(input);
+    std::string token;
+
+    // 使用getline函数，指定分隔符为'@'
+    while (std::getline(iss, token, '@')) {
+        result.push_back(token);
+    }
+
+    // 输出分割后的结果
+    std::cout << result.size() << std::endl;
+
+      Assert(result.size()==2,"image format error:  %s",oneline);
+
+        std::cout << result[0] << std::endl;
+        std::cout << result[1] << std::endl;
+    
+        std::strcpy(img_path, result[0].c_str());
+
+        std::string hexStr = result[1];
+    try {
+
+        // 如果需要更大的范围，可以使用std::stoul
+      unsigned long ulongNum = std::stoul(hexStr, nullptr, 16);
+        std::cout << "Converted unsigned long number: " << "0x"<< std::hex << ulongNum << std::endl;
+        *load_addr=ulongNum;
+    } catch (const std::invalid_argument& e) {
+        std::cerr << "Invalid argument: " << hexStr/* e.what() */ << std::endl;
+        exit(-1);
+    } catch (const std::out_of_range& e) {
+        std::cerr << "Out of range: " << hexStr/* e.what() */ << std::endl;
+        exit(-1);
+    }
+
+
 }
   int main(int argc, char *argv[])
   {
@@ -177,6 +217,11 @@ static const struct option longopts[] = {
       char *imgpath = NULL;
       // ----------
   
+    // 动态数组存储 -l 的参数
+    char **list_args = NULL;
+    size_t list_count = 0;
+    size_t list_capacity = 0;
+
       while ((optc = getopt_long(argc, argv, "hVgi:nt", longopts, NULL)) != -1)
           switch (optc) {
               /* One goal here is having --help and --version exit immediately,
@@ -190,6 +235,20 @@ static const struct option longopts[] = {
                   exit(EXIT_SUCCESS);
                   break;
               case 'i':
+                              // 动态扩容
+                if (list_count >= list_capacity) {
+                    size_t new_cap = (list_capacity == 0) ? 4 : list_capacity * 2;
+                    char **new_list = (char **)realloc(list_args, new_cap * sizeof(char *));
+                    if (!new_list) {
+                        perror("realloc failed");
+                        exit(EXIT_FAILURE);
+                    }
+                    list_args = new_list;
+                    list_capacity = new_cap;
+                }
+                // 保存参数（直接引用 optarg，无需复制）
+                list_args[list_count++] = optarg;
+
                   imgpath = optarg;
                   if (imgpath == NULL)
                   {
@@ -205,7 +264,7 @@ static const struct option longopts[] = {
                   break;
           }
 
-          
+
 
   difftest_htif_args.push_back("");
   // const char *isa = "RV"  "32"  "I" "MAFDC";
@@ -216,6 +275,7 @@ static const struct option longopts[] = {
     cfg_t cfg;
   cfg.isa = isa;
   cfg.hartids= std::vector<size_t>({0,1});
+  cfg.pmpregions=0;
   // cfg_t cfg(/*default_initrd_bounds=*/std::make_pair((reg_t)0, (reg_t)0),
   //           /*default_bootargs=*/nullptr,
   //           /*default_isa=*/isa,
@@ -252,10 +312,28 @@ FILE *cmd_file = NULL;
       
 
   s->set_procs_debug(true);
-
   s->diff_init(0);
-  int size=load_img(imgpath);
-  s->diff_memcpy(0x80000000, img_buf, size);
+
+  // int size=load_img(imgpath);
+  // s->diff_memcpy(0x80000000, img_buf, size);
+  ///////
+          printf("Collected -l arguments:\n");
+    for (size_t i = 0; i < list_count; i++) {
+        printf("  [%zu] %s\n", i, list_args[i]);
+    }
+
+    for(int i=0;i<list_count;i++){
+        char pppath[512];
+        long addddr=0;
+        getopt_img_oneline(list_args[i],pppath,&addddr);
+        printf(" %d [%s] 0x%lx\n", i,pppath, addddr);
+        int size=load_img(pppath);
+        s->diff_memcpy(addddr, img_buf, size);
+    }
+    // 释放动态数组（若需长期保存，需用 strdup 复制字符串并逐个 free）
+    free(list_args);
+
+    ///////       
   // s->diff_get_regs(NULL);
   // while(1){
   if(is_gdb_mode){
@@ -267,4 +345,5 @@ FILE *cmd_file = NULL;
     // s->diff_get_regs(NULL);
   // }
   std::cout << "hello" << std::endl;
+  return 0;
 }

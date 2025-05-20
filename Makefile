@@ -54,11 +54,13 @@ distclean:
 all: $(BINARY)
 .DEFAULT_GOAL = all
 
-RUN_ARGS+=-g -i $(IMAGE) 
+RUN_ARGS+=-i $(IMAGE)@0x80000000 $(ARGS)
 run:$(BINARY)
 	@ echo " - run $(NAME)"
 	$(BINARY) $(RUN_ARGS)
-
+debug:$(BINARY)
+	@ echo " - debug $(NAME)"
+	$(BINARY) $(RUN_ARGS) -g
 opensbi:
 	make run IMAGE=../riscv-linux/opensbi/build/platform/myspike/firmware/fw_payload.bin
 
