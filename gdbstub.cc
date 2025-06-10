@@ -152,10 +152,11 @@ static gdb_action_t emu_cont(void *args)
 	state_t *state = s->get_core(GDB_CORE_ID)->get_state();
         while ( 1) {
           // printf("emu_cont:pc= %x\n",(uint32_t)state->pc);
+          uint32_t  last_pc=state->pc;
         s->diff_step(1);
         if( bp.judge_eq((uint32_t)state->pc)||p->is_waiting_for_interrupt()){
-          // printf("emu_cont breakpoint ok:pc= %x\n",(uint32_t)state->pc);
-          break;  
+          printf("emu_cont breakpoint ok:pc= %x,last_pc=%x\n",(uint32_t)state->pc,last_pc);
+         if(last_pc!=state->pc) break;  
         }
     }
 

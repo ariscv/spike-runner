@@ -71,7 +71,7 @@ openocd:
 	./repo/build/spike --isa=rv32imafdc_zicsr_zifencei_zicntr_Sstc --rbb-port=1234 -m0x80000000:0x1000000  -d  --log=`pwd`/spike.trace  code/bao-demos/wrkdir/srcs/opensbi/build/platform/myspike/firmware/fw_payload.elf 
 
 gdb:
-	/opt/riscv-rv64g-lp64/bin/riscv64-unknown-linux-gnu-gdb -ex "target remote localhost:1234" ../riscv-linux/opensbi/build/platform/myspike/firmware/fw_payload.elf 
-
+	/opt/riscv-rv32ima-ilp32/bin/riscv32-unknown-linux-gnu-gdb -ex "target remote localhost:1234" -ex "add-symbol-file linux-5.15.183/vmlinux 0xc0000000" opensbi/build/platform/myspike/firmware/fw_payload.elf 
+	# /opt/riscv-rv32ima-ilp32/bin/riscv32-unknown-linux-gnu-gdb -ex "target remote localhost:1234" -ex "add-symbol-file linux-5.15.183/vmlinux 0x80400000" -ex "add-symbol-file linux-5.15.183/vmlinux 0xc0000000" opensbi/build/platform/myspike/firmware/fw_payload.elf 
 
 .PHONY: all clean $(SPIKE) run

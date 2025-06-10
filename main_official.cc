@@ -4,6 +4,7 @@
 
 
 #include "mmu.h"
+#include "dts.h"
 #include "sim.h"
 #include <iostream>
 
@@ -36,6 +37,7 @@ static state_t *state = NULL;
 static bool is_gdb_mode=false;
 
 void sim_t::diff_step(uint64_t n) {
+  if(n==-1){while (1) step(-1);}
   int nprocs_ended = 0;
   for(int i=0; i < n; i++){
     //diff_get_regs((void*)-1);
@@ -274,6 +276,13 @@ void getopt_img_oneline(char* oneline,char* img_path,long* load_addr)
   cfg->hartids= std::vector<size_t>({0}); */
     cfg_t cfg;
   cfg.isa = isa;
+  // cfg.hartids= std::vector<size_t>({0,1});
+  cfg.mem_layout= std::vector<mem_cfg_t>(
+    {
+      mem_cfg_t(reg_t(DRAM_BASE), (size_t)2048 << 20),
+      // mem_cfg_t(reg_t(0x70000000), (size_t)1024 << 20),
+    }
+  );
   cfg.hartids= std::vector<size_t>({0,1});
   cfg.pmpregions=0;
   // cfg_t cfg(/*default_initrd_bounds=*/std::make_pair((reg_t)0, (reg_t)0),
@@ -310,10 +319,14 @@ FILE *cmd_file = NULL;
       cmd_file,
       instructions);
       
+    //  std::string dtb=dts_to_dtb(s->get_dts());
+    //  s->diff_memcpy(0x70000000, (void*)dtb.c_str(), dtb.size());
 
-  s->set_procs_debug(true);
+  // s->set_procs_debug(true);
   s->diff_init(0);
 
+  extern int init_pty();
+  init_pty();
   // int size=load_img(imgpath);
   // s->diff_memcpy(0x80000000, img_buf, size);
   ///////
