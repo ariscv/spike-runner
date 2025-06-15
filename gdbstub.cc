@@ -12,7 +12,7 @@ extern "C" {
 
 #include "main.h"
 
-#define GDB_CORE_ID (0)
+#define GDB_CORE_ID (1)
 
 class bp_t{
   public:

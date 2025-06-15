@@ -38,6 +38,7 @@ static bool is_gdb_mode=false;
 
 void sim_t::diff_step(uint64_t n) {
   if(n==-1){while (1) step(-1);}
+  try{
   int nprocs_ended = 0;
   for(int i=0; i < n; i++){
     //diff_get_regs((void*)-1);
@@ -61,6 +62,10 @@ void sim_t::diff_step(uint64_t n) {
     //printf("==%d\n",i);
   }
   // step(n);
+}catch(...)
+{
+
+}
 }
 void sim_t::diff_get_regs(void* diff_context) {
 if(diff_context==NULL)
@@ -165,6 +170,7 @@ static const struct option longopts[] = {
   {"gdb", no_argument, NULL, 'g'},
   {"next-generation", no_argument, NULL, 'n'},
   {"traditional", no_argument, NULL, 't'},
+  {"use pty", no_argument, NULL, 'p'},
   // ----------
   {NULL, 0, NULL, 0}};
 
@@ -224,7 +230,7 @@ void getopt_img_oneline(char* oneline,char* img_path,long* load_addr)
     size_t list_count = 0;
     size_t list_capacity = 0;
 
-      while ((optc = getopt_long(argc, argv, "hVgi:nt", longopts, NULL)) != -1)
+      while ((optc = getopt_long(argc, argv, "hVgpi:nt", longopts, NULL)) != -1)
           switch (optc) {
               /* One goal here is having --help and --version exit immediately,
                  per GNU coding standards.  */
@@ -260,6 +266,10 @@ void getopt_img_oneline(char* oneline,char* img_path,long* load_addr)
                   break;
               case 'g':
                   is_gdb_mode = true;
+                  break;
+              case 'p':
+                  extern int init_pty();
+                  init_pty();
                   break;
               default:
                   
@@ -322,11 +332,9 @@ FILE *cmd_file = NULL;
     //  std::string dtb=dts_to_dtb(s->get_dts());
     //  s->diff_memcpy(0x70000000, (void*)dtb.c_str(), dtb.size());
 
-  // s->set_procs_debug(true);
+  s->set_procs_debug(true);
   s->diff_init(0);
 
-  extern int init_pty();
-  init_pty();
   // int size=load_img(imgpath);
   // s->diff_memcpy(0x80000000, img_buf, size);
   ///////
